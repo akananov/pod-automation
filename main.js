@@ -632,52 +632,64 @@ function callGeminiAPI(prompt) {
 }
 
 function generateDetailedSummary(transcript, okrContext) {
-  const prompt = 
-    'You are an executive assistant analyzing a team meeting transcript. Generate a comprehensive HTML summary that includes:\n\n' +
-    '<h2>Executive Overview</h2>\n' +
-    '<p>[2-3 sentence overview of the meeting\'s main purpose and outcomes]</p>\n\n' +
-    '<h2>Key Decisions Made</h2>\n' +
-    '<ul>\n' +
-    '<li>[List all major decisions with context]</li>\n' +
-    '</ul>\n\n' +
-    '<h2>Action Items</h2>\n' +
-    '<ul>\n' +
-    '<li>[List all action items with owners and deadlines]</li>\n' +
-    '</ul>\n\n' +
-    '<h2>Discussion Highlights</h2>\n' +
-    '<ul>\n' +
-    '<li>[Key discussion points and insights]</li>\n' +
-    '</ul>\n\n' +
-    'IMPORTANT: Reduce duplications, Provide ONLY the HTML content without any markdown formatting, code blocks, or ```html markers. The output should be clean HTML that can be directly embedded in an email.\n\n' +
-    'Meeting Transcript:\n' + transcript + '\n\n' +
-    'OKR Context:\n' + okrContext;
+  const prompt = CONFIG.detailedSummaryPrompt
+    .replace('{TRANSCRIPT}', transcript)
+    .replace('{OKR_CONTEXT}', okrContext);
   
-  return callGeminiAPI(prompt);
+  const rawSummary = callGeminiAPI(prompt);
+  
+  // Convert the simplified format to HTML
+  return convertSummaryToHtml(rawSummary);
+}
+
+function convertSummaryToHtml(summary) {
+  // Split the summary into sections
+  const sections = summary.split(/\n(?=[A-Z][A-Z\s]+:)/);
+  
+  let html = '';
+  
+  for (const section of sections) {
+    const lines = section.trim().split('\n');
+    if (lines.length === 0) continue;
+    
+    const header = lines[0].trim();
+    const content = lines.slice(1).join('\n').trim();
+    
+    if (content) {
+      // Convert section header to HTML
+      const htmlHeader = header.replace(':', '').toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '');
+      
+      html += `<h2>${header.replace(':', '')}</h2>\n`;
+      
+      // Convert content to HTML
+      if (content.includes('•') || content.includes('-') || content.includes('*')) {
+        // Convert to unordered list
+        const items = content.split(/\n(?=[•\-*])/).map(item => 
+          item.replace(/^[•\-*]\s*/, '').trim()
+        ).filter(item => item.length > 0);
+        
+        if (items.length > 0) {
+          html += '<ul>\n';
+          items.forEach(item => {
+            html += `<li>${item}</li>\n`;
+          });
+          html += '</ul>\n\n';
+        }
+      } else {
+        // Convert to paragraph
+        html += `<p>${content}</p>\n\n`;
+      }
+    }
+  }
+  
+  return html;
 }
 
 function generateConciseSummary(transcript) {
-  const prompt = 
-    'Generate a concise summary of this meeting transcript, with highlight, low lights, main outcomes and decisions sections.\n\n' +
-    'Format the response EXACTLY like this:\n\n' +
-    '**Highlights:**\n' +
-    '* First highlight point\n' +
-    '* Second highlight point\n\n' +
-    '**Low Lights:**\n' +
-    '* First challenge or issue\n' +
-    '* Second challenge or issue\n\n' +
-    '**Main Outcomes:**\n' +
-    '* First main outcome\n' +
-    '* Second main outcome\n\n' +
-    '**Decisions:**\n' +
-    '* First decision or action item\n' +
-    '* Second decision or action item\n\n' +
-    'IMPORTANT RULES:\n' +
-    '1. Use **bold** for section headers (Highlights, Low Lights, Main Outcomes, Decisions)\n' +
-    '2. Use * (asterisk followed by space) for bullet points\n' +
-    '3. Do NOT use any other markdown formatting\n' +
-    '4. Keep each bullet point concise (1-2 sentences max)\n' +
-    '5. Focus on the most important points from the meeting\n\n' +
-    'Meeting Transcript:\n' + transcript;
+  const prompt = CONFIG.conciseSummaryPrompt
+    .replace('{TRANSCRIPT}', transcript);
   
   return callGeminiAPI(prompt);
 }
@@ -741,17 +753,17 @@ function formatConciseSummary(body, conciseSummary, startIndex) {
       continue;
     }
     
-    // Check for section headers (Highlights, Low Lights, etc.)
-    if (line.match(/^\*\*(.*?)\*\*:?$/)) {
-      const sectionTitle = line.replace(/^\*\*(.*?)\*\*:?$/, '$1');
+    // Check for section headers (ALL CAPS format like "HIGHLIGHTS:")
+    if (line.match(/^[A-Z][A-Z\s]+:?$/)) {
+      const sectionTitle = line.replace(':', '');
       const headerPara = body.insertParagraph(currentIndex, sectionTitle);
       headerPara.setHeading(DocumentApp.ParagraphHeading.HEADING4);
-      headerPara.setBold(true);
+      headerPara.setBold(false);
       currentIndex++;
     }
-    // Check for bullet points - handle both "* text" and "*text" patterns
-    else if (line.match(/^\*\s*(.*)$/)) {
-      const bulletText = line.replace(/^\*\s*/, '');
+    // Check for bullet points - handle various bullet formats
+    else if (line.match(/^[•\-*]\s*(.*)$/)) {
+      const bulletText = line.replace(/^[•\-*]\s*/, '');
       const bulletPara = body.insertParagraph(currentIndex, `• ${bulletText}`);
       currentIndex++;
     }
@@ -837,8 +849,8 @@ function sendSummaryEmail(meeting, detailedSummary) {
   </div>
   
   <div class="footer">
-    <p>This summary was automatically generated by the Pod Leader Automation system.</p>
-    <p>Questions? Contact ${CONFIG.podLeaderEmail}</p>
+    <p>${CONFIG.emailFooterMessage}</p>
+    <p>${CONFIG.emailContactMessage.replace('{POD_LEADER_EMAIL}', CONFIG.podLeaderEmail)}</p>
   </div>
 </body>
 </html>
@@ -850,8 +862,8 @@ ${meeting.title} - ${dateStr}
 
 ${cleanSummary.replace(/<[^>]*>/g, '')}
 
-This summary was automatically generated by the Pod Leader Automation system.
-Questions? Contact ${CONFIG.podLeaderEmail}
+${CONFIG.emailFooterMessage}
+${CONFIG.emailContactMessage.replace('{POD_LEADER_EMAIL}', CONFIG.podLeaderEmail)}
 `;
   
   try {
@@ -871,7 +883,7 @@ Questions? Contact ${CONFIG.podLeaderEmail}
 
 function sendErrorNotification(subject, message) {
   const body = `
-An error occurred in the Pod Leader Automation system:
+${CONFIG.errorNotificationHeader}
 
 ${subject}
 
@@ -880,7 +892,7 @@ ${message}
 
 Time: ${new Date()}
 
-Please check the Apps Script logs for more details.
+${CONFIG.errorNotificationFooter}
 `;
   
   try {
