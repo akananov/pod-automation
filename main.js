@@ -758,7 +758,7 @@ function formatConciseSummary(body, conciseSummary, startIndex) {
       const sectionTitle = line.replace(':', '');
       const headerPara = body.insertParagraph(currentIndex, sectionTitle);
       headerPara.setHeading(DocumentApp.ParagraphHeading.HEADING4);
-      headerPara.setBold(false);
+      headerPara.setBold(true);
       currentIndex++;
     }
     // Check for bullet points - handle various bullet formats
@@ -773,11 +773,111 @@ function formatConciseSummary(body, conciseSummary, startIndex) {
       const numberedPara = body.insertParagraph(currentIndex, `• ${numberedText}`);
       currentIndex++;
     }
-    // Regular paragraph
-    else if (line.length > 0) {
-      const para = body.insertParagraph(currentIndex, line);
-      currentIndex++;
+    // Check for content that should be split into bullet points
+    else if (line.includes('•') || line.includes('-') || line.includes('*')) {
+      // Split content that contains multiple bullet points in one line
+      const bulletItems = line.split(/(?=[•\-*])/).filter(item => item.trim().length > 0);
+      for (const item of bulletItems) {
+        const cleanItem = item.replace(/^[•\-*]\s*/, '').trim();
+        if (cleanItem.length > 0) {
+          const bulletPara = body.insertParagraph(currentIndex, `• ${cleanItem}`);
+          currentIndex++;
+        }
+      }
     }
+    // Regular paragraph - but check if it's actually a list that needs splitting
+    else if (line.length > 0) {
+      // Check if this line contains multiple sentences that should be bullet points
+      if (line.includes('. ') && line.length > 100) {
+        // Split long paragraphs into bullet points
+        const sentences = line.split('. ').filter(s => s.trim().length > 0);
+        if (sentences.length > 1) {
+          for (const sentence of sentences) {
+            const cleanSentence = sentence.replace(/^[•\-*]\s*/, '').trim();
+            if (cleanSentence.length > 0) {
+              const bulletPara = body.insertParagraph(currentIndex, `• ${cleanSentence}`);
+              currentIndex++;
+            }
+          }
+        } else {
+          const para = body.insertParagraph(currentIndex, line);
+          currentIndex++;
+        }
+      } else {
+        const para = body.insertParagraph(currentIndex, line);
+        currentIndex++;
+      }
+    }
+  }
+}
+
+/**
+ * Enhanced function to test formatting with sample data
+ * This helps verify that the formatting improvements work correctly
+ */
+function testFormattingImprovements() {
+  Logger.log('=== Testing Formatting Improvements ===');
+  
+  // Sample content that represents the problematic formatting from your images
+  const sampleContent = `HIGHLIGHTS:
+• Team completed the quarterly planning session successfully
+• All major milestones are on track for Q4 delivery
+• Budget approval received for new infrastructure projects
+
+LOW LIGHTS:
+• Some delays in the testing phase due to resource constraints
+• Communication gaps between teams need to be addressed
+
+MAIN OUTCOMES:
+• Finalized the product roadmap for next quarter
+• Assigned ownership for all critical deliverables
+• Established new communication protocols
+
+DECISIONS:
+• John will lead the infrastructure migration project
+• Sarah will coordinate with the QA team for testing
+• Weekly standup meetings will be held every Monday at 9 AM
+
+OKR IMPACT:
+• Progress on "Grow in Marketplace" objective (Progress: 93%)
+• "Pricing Modernization" initiative remains on track (Progress: 0%)
+• Team collaboration improvements support "Customer Satisfaction" goals`;
+
+  Logger.log('Sample content to test:');
+  Logger.log(sampleContent);
+  
+  // Test the formatting function
+  try {
+    // Create a test document
+    const testDoc = DocumentApp.create('Formatting Test - ' + new Date().toISOString());
+    const body = testDoc.getBody();
+    
+    // Clear the default content
+    body.clear();
+    
+    // Add a title
+    const title = body.appendParagraph('Formatting Test Results');
+    title.setHeading(DocumentApp.ParagraphHeading.HEADING1);
+    title.setBold(true);
+    
+    // Test the formatting function
+    formatConciseSummary(body, sampleContent, 1);
+    
+    Logger.log('✓ Formatting test completed successfully');
+    Logger.log('✓ Test document created: ' + testDoc.getUrl());
+    
+    return {
+      success: true,
+      documentUrl: testDoc.getUrl(),
+      message: 'Formatting test completed successfully'
+    };
+    
+  } catch (error) {
+    Logger.log('✗ Formatting test failed: ' + error.message);
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 

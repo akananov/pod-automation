@@ -121,14 +121,25 @@ const CONFIG = {
     'EXECUTIVE OVERVIEW:\n' +
     '[2-3 sentence overview of the meeting\'s main purpose and outcomes]\n\n' +
     'KEY DECISIONS MADE:\n' +
-    '[List all major decisions with context]\n\n' +
+    '• [List each major decision with context - one bullet point per decision]\n' +
+    '• [Include rationale and impact when mentioned]\n\n' +
     'ACTION ITEMS:\n' +
-    '[List all action items with owners and deadlines]\n\n' +
+    '• [List each action item with owner and deadline - one bullet point per item]\n' +
+    '• [Include specific deliverables when mentioned]\n\n' +
     'DISCUSSION HIGHLIGHTS:\n' +
-    '[Key discussion points and insights]\n\n' +
+    '• [List key discussion points and insights - one bullet point per highlight]\n' +
+    '• [Focus on important topics and outcomes]\n\n' +
     'OKR IMPACT:\n' +
-    '[Analysis of how the discussion and decisions align with the team\'s OKRs. Reference specific objectives and key results.]\n\n' +
-    'IMPORTANT: Provide ONLY the content above without any markdown formatting, code blocks, or HTML tags. Use clear section headers in ALL CAPS followed by the content.\n\n' +
+    '• [Analysis of how the discussion and decisions align with the team\'s OKRs - one bullet point per impact]\n' +
+    '• [Reference specific objectives and key results when possible]\n\n' +
+    'CRITICAL FORMATTING RULES:\n' +
+    '1. Use EXACTLY the section headers shown above in ALL CAPS\n' +
+    '2. Each bullet point must start with "• " (bullet character + space)\n' +
+    '3. Each bullet point must be on its own line\n' +
+    '4. Keep bullet points concise but informative\n' +
+    '5. Do NOT combine multiple items into one bullet point\n' +
+    '6. Do NOT use numbered lists or other formatting\n' +
+    '7. Provide ONLY the content above without any markdown formatting, code blocks, or HTML tags\n\n' +
     'Meeting Transcript:\n{TRANSCRIPT}\n\n' +
     'OKR Context:\n{OKR_CONTEXT}',
   
@@ -136,16 +147,28 @@ const CONFIG = {
   conciseSummaryPrompt:
     'Generate a concise summary of this meeting transcript with these sections:\n\n' +
     'HIGHLIGHTS:\n' +
-    '[List key positive outcomes and achievements]\n\n' +
+    '• [List key positive outcomes and achievements - one bullet point per item]\n' +
+    '• [Each highlight should be 1-2 sentences maximum]\n\n' +
     'LOW LIGHTS:\n' +
-    '[List challenges, issues, or concerns raised]\n\n' +
+    '• [List challenges, issues, or concerns raised - one bullet point per item]\n' +
+    '• [Each concern should be 1-2 sentences maximum]\n\n' +
     'MAIN OUTCOMES:\n' +
-    '[List the primary results and deliverables]\n\n' +
+    '• [List the primary results and deliverables - one bullet point per outcome]\n' +
+    '• [Each outcome should be 1-2 sentences maximum]\n\n' +
     'DECISIONS:\n' +
-    '[List all decisions made and action items assigned]\n\n' +
+    '• [List all decisions made and action items assigned - one bullet point per decision/action]\n' +
+    '• [Include owner and deadline when mentioned]\n\n' +
     'OKR IMPACT:\n' +
-    '[List how the meeting impacts team OKRs and objectives]\n\n' +
-    'IMPORTANT: Use clear section headers in ALL CAPS followed by bullet points. Keep each point concise (1-2 sentences max). Focus on the most important information from the meeting.\n\n' +
+    '• [List how the meeting impacts team OKRs and objectives - one bullet point per impact]\n' +
+    '• [Reference specific OKRs when possible]\n\n' +
+    'CRITICAL FORMATTING RULES:\n' +
+    '1. Use EXACTLY the section headers shown above in ALL CAPS\n' +
+    '2. Each bullet point must start with "• " (bullet character + space)\n' +
+    '3. Each bullet point must be on its own line\n' +
+    '4. Keep each bullet point to 1-2 sentences maximum\n' +
+    '5. Do NOT combine multiple items into one bullet point\n' +
+    '6. Do NOT use numbered lists or other formatting\n' +
+    '7. If a section has no content, write "• No items to report"\n\n' +
     'Meeting Transcript:\n{TRANSCRIPT}',
   
   // Email footer messages
